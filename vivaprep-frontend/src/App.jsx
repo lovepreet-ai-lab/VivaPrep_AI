@@ -88,7 +88,16 @@ function App() {
           timestamp: new Date().toLocaleString()
         };
 
-        const updatedHistory = [newEntry, ...history].slice(0, 8);
+        const filteredHistory = history.filter(
+  (item) =>
+    !(
+      item.subject === subject &&
+      item.topic === topic &&
+      item.mode === mode
+    )
+);
+
+const updatedHistory = [newEntry, ...filteredHistory].slice(0, 8);
         setHistory(updatedHistory);
         localStorage.setItem("history", JSON.stringify(updatedHistory));
       }
