@@ -44,8 +44,9 @@ function App() {
     setResult(null);
 
     try {
+      const BASE_URL = import.meta.env.VITE_API_URL;
       const endpoint =
-        "http://127.0.0.1:5000" + SUBJECTS[subject].endpoint;
+        BASE_URL + SUBJECTS[subject].endpoint;
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
