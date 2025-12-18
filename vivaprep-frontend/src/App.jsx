@@ -28,9 +28,12 @@ function App() {
     JSON.parse(localStorage.getItem("history")) || []
   );
 
+  const [bookmarks, setBookmarks] = useState(
+    JSON.parse(localStorage.getItem("bookmarks")) || []
+  );
+
   /* -------------------- EFFECTS -------------------- */
 
-  // Reset topic & result when subject changes
   useEffect(() => {
     setTopic("");
     setResult(null);
@@ -47,6 +50,37 @@ function App() {
     const newMode = !darkMode;
     setDarkMode(newMode);
     localStorage.setItem("darkMode", newMode);
+  };
+
+  const isBookmarked = (title, content) =>
+    bookmarks.some(
+      (b) => b.title === title && b.content === content
+    );
+
+  const toggleBookmark = (title, content) => {
+    const exists = bookmarks.find(
+      (b) => b.title === title && b.content === content
+    );
+
+    let updatedBookmarks;
+
+    if (exists) {
+      updatedBookmarks = bookmarks.filter(
+        (b) => !(b.title === title && b.content === content)
+      );
+    } else {
+      updatedBookmarks = [
+        {
+          title,
+          content,
+          timestamp: new Date().toLocaleString()
+        },
+        ...bookmarks
+      ];
+    }
+
+    setBookmarks(updatedBookmarks);
+    localStorage.setItem("bookmarks", JSON.stringify(updatedBookmarks));
   };
 
   /* -------------------- API CALL -------------------- */
@@ -80,7 +114,6 @@ function App() {
       } else {
         setResult(data.data);
 
-        // Save to history
         const newEntry = {
           subject,
           topic,
@@ -114,7 +147,7 @@ function App() {
     <div className={`app-container ${darkMode ? "dark" : ""}`}>
       <h1>📘 VivaPrep AI ({subject})</h1>
 
-      {/* 🌙 Dark Mode Toggle */}
+      {/* Dark Mode */}
       <button
         onClick={toggleDarkMode}
         style={{
@@ -125,7 +158,7 @@ function App() {
         {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
       </button>
 
-      {/* Subject + Controls */}
+      {/* Controls */}
       <SubjectSelect subject={subject} setSubject={setSubject} />
 
       <TopicSelect
@@ -153,7 +186,7 @@ function App() {
       {/* Error */}
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      {/* Loading Skeleton */}
+      {/* Loading */}
       {loading && (
         <div style={{ marginTop: "30px" }}>
           <SkeletonCard />
@@ -162,7 +195,7 @@ function App() {
         </div>
       )}
 
-      {/* History Panel */}
+      {/* History */}
       <HistoryPanel
         history={history}
         onSelect={(item) => {
@@ -180,7 +213,6 @@ function App() {
         </p>
       )}
 
-      {/* Divider */}
       {result && <div className="section-divider"></div>}
 
       {/* Results */}
@@ -191,6 +223,13 @@ function App() {
               title="🗣 1-Minute Viva Answer"
               content={result.viva_1_min}
               onCopy={() => copyToClipboard(result.viva_1_min)}
+              onBookmark={() =>
+                toggleBookmark("🗣 1-Minute Viva Answer", result.viva_1_min)
+              }
+              isBookmarked={isBookmarked(
+                "🗣 1-Minute Viva Answer",
+                result.viva_1_min
+              )}
             />
           )}
 
@@ -202,6 +241,16 @@ function App() {
               onCopy={() =>
                 copyToClipboard(result.questions.join("\n"))
               }
+              onBookmark={() =>
+                toggleBookmark(
+                  "❓ Examiner Questions",
+                  result.questions.join("\n")
+                )
+              }
+              isBookmarked={isBookmarked(
+                "❓ Examiner Questions",
+                result.questions.join("\n")
+              )}
             />
           )}
 
@@ -210,6 +259,13 @@ function App() {
               title="🧠 Hinglish Explanation"
               content={result.hinglish}
               onCopy={() => copyToClipboard(result.hinglish)}
+              onBookmark={() =>
+                toggleBookmark("🧠 Hinglish Explanation", result.hinglish)
+              }
+              isBookmarked={isBookmarked(
+                "🧠 Hinglish Explanation",
+                result.hinglish
+              )}
             />
           )}
 
@@ -218,6 +274,13 @@ function App() {
               title="🔍 If Examiner Goes Deeper"
               content={result.deep}
               onCopy={() => copyToClipboard(result.deep)}
+              onBookmark={() =>
+                toggleBookmark("🔍 If Examiner Goes Deeper", result.deep)
+              }
+              isBookmarked={isBookmarked(
+                "🔍 If Examiner Goes Deeper",
+                result.deep
+              )}
             />
           )}
 
@@ -226,6 +289,13 @@ function App() {
               title="📝 Exam Answer"
               content={result.exam_answer}
               onCopy={() => copyToClipboard(result.exam_answer)}
+              onBookmark={() =>
+                toggleBookmark("📝 Exam Answer", result.exam_answer)
+              }
+              isBookmarked={isBookmarked(
+                "📝 Exam Answer",
+                result.exam_answer
+              )}
             />
           )}
         </div>
