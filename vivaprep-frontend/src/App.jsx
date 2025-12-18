@@ -6,6 +6,7 @@ import ResultCard from "./components/ResultCard";
 import SkeletonCard from "./components/SkeletonCard";
 import SubjectSelect from "./components/SubjectSelect";
 import HistoryPanel from "./components/HistoryPanel";
+import BookmarksPanel from "./components/BookmarksPanel";
 
 import { SUBJECTS } from "./data/subjects";
 
@@ -81,6 +82,20 @@ function App() {
 
     setBookmarks(updatedBookmarks);
     localStorage.setItem("bookmarks", JSON.stringify(updatedBookmarks));
+  };
+
+  const removeBookmark = (title, content) => {
+    const updated = bookmarks.filter(
+      (b) => !(b.title === title && b.content === content)
+    );
+
+    setBookmarks(updated);
+    localStorage.setItem("bookmarks", JSON.stringify(updated));
+  };
+
+  const clearBookmarks = () => {
+    setBookmarks([]);
+    localStorage.removeItem("bookmarks");
   };
 
   /* -------------------- API CALL -------------------- */
@@ -300,6 +315,14 @@ function App() {
           )}
         </div>
       )}
+
+      {/* Bookmarks */}
+      <BookmarksPanel
+        bookmarks={bookmarks}
+        onCopy={copyToClipboard}
+        onRemove={removeBookmark}
+        onClear={clearBookmarks}
+      />
 
       {/* Footer */}
       <footer

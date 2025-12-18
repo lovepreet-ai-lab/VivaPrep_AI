@@ -211,3 +211,7 @@ select {
 .card ul li:hover {
   text-decoration: underline;
 }
+
+.dark .card {
+  background: #020617;
+}
