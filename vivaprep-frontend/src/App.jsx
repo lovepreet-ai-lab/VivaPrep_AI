@@ -1,0 +1,172 @@
+import TopicSelect from "./components/TopicSelect";
+import ModeSelect from "./components/ModeSelect";
+import ResultCard from "./components/ResultCard";
+import SkeletonCard from "./components/SkeletonCard";
+import SubjectSelect from "./components/SubjectSelect";
+import { SUBJECTS } from "./data/subjects";
+import { useState, useEffect } from "react";
+
+function App() {
+  const [subject, setSubject] = useState("DSA");
+  const [darkMode, setDarkMode] = useState(
+    localStorage.getItem("darkMode") === "true"
+  );
+  const [topic, setTopic] = useState("");
+  const [mode, setMode] = useState("viva");
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    setTopic("");
+    setResult(null);
+  }, [subject]);
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    alert("Copied to clipboard ✅");
+  };
+
+  const toggleDarkMode = () => {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    localStorage.setItem("darkMode", newMode);
+  };
+
+  const generateAnswer = async () => {
+    if (!topic) {
+      alert("Please select a topic");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setResult(null);
+
+    try {
+      const endpoint =
+        "http://127.0.0.1:5000" + SUBJECTS[subject].endpoint;
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ topic, mode })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Something went wrong");
+      } else {
+        setResult(data.data);
+      }
+    } catch {
+      setError("Backend not reachable");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className={`app-container ${darkMode ? "dark" : ""}`}>
+      <h1>📘 VivaPrep AI (DSA)</h1>
+
+      {/* 🌙 Dark Mode Toggle */}
+      <button
+        onClick={toggleDarkMode}
+        style={{
+          marginBottom: "20px",
+          background: darkMode ? "#374151" : "#111827"
+        }}
+      >
+        {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
+      </button>
+
+      <SubjectSelect subject={subject} setSubject={setSubject} />
+      {/* Controls */}
+      <TopicSelect
+        topic={topic}
+        setTopic={setTopic}
+        topics={SUBJECTS[subject].topics}
+      />
+      <ModeSelect mode={mode} setMode={setMode} />
+
+      <br /><br />
+
+      <button
+        className="generate-btn"
+        onClick={generateAnswer}
+        disabled={loading}
+        style={{
+          opacity: loading ? 0.7 : 1,
+          cursor: loading ? "not-allowed" : "pointer"
+        }}
+      >
+        {loading ? "Generating..." : "Generate Answer"}
+      </button>
+
+      {/* Error message */}
+      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      {/* Loading Skeleton */}
+      {loading && (
+        <div style={{ marginTop: "30px" }}>
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+      )}
+
+      {/* Result Cards */}
+      {!loading && result && (
+        <div style={{ marginTop: "30px" }}>
+          {result.viva_1_min && (
+            <ResultCard
+              title="🗣 1-Minute Viva Answer"
+              content={result.viva_1_min}
+              onCopy={() => copyToClipboard(result.viva_1_min)}
+            />
+          )}
+
+          {result.questions && (
+            <ResultCard
+              title="❓ Examiner Questions"
+              content={result.questions}
+              isList
+              onCopy={() =>
+                copyToClipboard(result.questions.join("\n"))
+              }
+            />
+          )}
+
+          {result.hinglish && (
+            <ResultCard
+              title="🧠 Hinglish Explanation"
+              content={result.hinglish}
+              onCopy={() => copyToClipboard(result.hinglish)}
+            />
+          )}
+
+          {result.deep && (
+            <ResultCard
+              title="🔍 If Examiner Goes Deeper"
+              content={result.deep}
+              onCopy={() => copyToClipboard(result.deep)}
+            />
+          )}
+
+          {result.exam_answer && (
+            <ResultCard
+              title="📝 Exam Answer"
+              content={result.exam_answer}
+              onCopy={() => copyToClipboard(result.exam_answer)}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;

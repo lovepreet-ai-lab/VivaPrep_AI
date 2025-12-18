@@ -1,0 +1,21 @@
+export const dsaTopics = [
+  "Linear Search",
+  "Binary Search",
+  "Bubble Sort",
+  "Selection Sort",
+  "Insertion Sort",
+  "Merge Sort",
+  "Quick Sort",
+  "Stack",
+  "Queue",
+  "Circular Queue",
+  "Linked List",
+  "Binary Tree",
+  "Binary Search Tree",
+  "Heap",
+  "BFS",
+  "DFS",
+  "Recursion",
+  "Time Complexity",
+  "Space Complexity"
+];
