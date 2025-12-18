@@ -119,6 +119,8 @@ function App() {
         </div>
       )}
 
+      {result && <div className="section-divider"></div>}
+
       {/* Result Cards */}
       {!loading && result && (
         <div style={{ marginTop: "30px" }}>
@@ -128,6 +130,12 @@ function App() {
               content={result.viva_1_min}
               onCopy={() => copyToClipboard(result.viva_1_min)}
             />
+          )}
+
+          {!loading && !result && !error && (
+            <p style={{ marginTop: "30px", opacity: 0.6 }}>
+              👆 Select a subject, topic & mode to generate answers
+            </p>
           )}
 
           {result.questions && (
@@ -166,6 +174,14 @@ function App() {
           )}
         </div>
       )}
+      <footer style={{
+        marginTop: "50px",
+        padding: "15px",
+        fontSize: "14px",
+        opacity: 0.7
+      }}>
+        Built with ❤️ by <strong>Lovepreet Singh</strong> • VivaPrep AI v1.0
+      </footer>
     </div>
   );
 }

@@ -189,3 +189,22 @@ select {
 .dark h3 {
   color: #f9fafb;
 }
+
+.section-divider {
+  margin: 40px 0 20px;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.dark .section-divider {
+  background: #334155;
+}
+
+.generate-btn {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.generate-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
