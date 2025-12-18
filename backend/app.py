@@ -16,9 +16,17 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 
 # ------------------ Prompt Loader ------------------
 
-def load_prompt(topic, mode):
+def load_prompt(topic, mode, subject):
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    prompt_path = os.path.join(base_dir, "prompts", "dsa_prompt.txt")
+
+    PROMPT_MAP = {
+        "DSA": "dsa_prompt.txt",
+        "DE": "de_prompt.txt",
+        "OOPS": "oops_prompt.txt"
+    }
+
+    prompt_file = PROMPT_MAP.get(subject, "dsa_prompt.txt")
+    prompt_path = os.path.join(base_dir, "prompts", prompt_file)
 
     with open(prompt_path, "r", encoding="utf-8") as file:
         prompt = file.read()
@@ -36,9 +44,10 @@ def generate_dsa_viva():
 
     # 1️⃣ Extract inputs
     topic = data.get("topic")
-    mode = data.get("mode", "viva")  # default mode
+    mode = data.get("mode", "viva")
+    subject = data.get("subject", "DSA")
 
-    # 2️⃣ Validate topic exists
+    # 2️⃣ Validate topic
     if not topic:
         return jsonify({"error": "Topic is required"}), 400
 
@@ -50,15 +59,15 @@ def generate_dsa_viva():
             "allowed_modes": allowed_modes
         }), 400
 
-    # 4️⃣ Validate DSA topic (WHITELIST)
-    if topic not in DSA_TOPICS:
+    # 4️⃣ Validate DSA topics ONLY for DSA
+    if subject == "DSA" and topic not in DSA_TOPICS:
         return jsonify({
             "error": "Invalid DSA topic",
             "allowed_topics": DSA_TOPICS
         }), 400
 
-    # 5️⃣ Load prompt
-    prompt = load_prompt(topic, mode)
+    # 5️⃣ Load subject-specific prompt
+    prompt = load_prompt(topic, mode, subject)
 
     try:
         # 6️⃣ OpenAI call
@@ -83,8 +92,9 @@ def generate_dsa_viva():
                 "raw_output": ai_text
             }), 500
 
-        # 8️⃣ Return final response
+        # 8️⃣ Return response
         return jsonify({
+            "subject": subject,
             "topic": topic,
             "mode": mode,
             "data": structured
