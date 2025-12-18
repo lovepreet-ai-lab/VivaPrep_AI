@@ -63,8 +63,8 @@ function App() {
         setResult(data.data);
       }
     } catch {
-      setError("Backend not reachable");
-    } finally {
+  setError("Backend is waking up… please retry in 30 seconds ⏳");
+} finally {
       setLoading(false);
     }
   };
