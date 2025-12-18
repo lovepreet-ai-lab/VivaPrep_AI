@@ -5,6 +5,7 @@ import SkeletonCard from "./components/SkeletonCard";
 import SubjectSelect from "./components/SubjectSelect";
 import { SUBJECTS } from "./data/subjects";
 import { useState, useEffect } from "react";
+import HistoryPanel from "./components/HistoryPanel";
 
 function App() {
   const [subject, setSubject] = useState("DSA");
@@ -32,6 +33,10 @@ function App() {
     setDarkMode(newMode);
     localStorage.setItem("darkMode", newMode);
   };
+
+  const [history, setHistory] = useState(
+    JSON.parse(localStorage.getItem("history")) || []
+  );
 
   const generateAnswer = async () => {
     if (!topic) {
@@ -61,10 +66,22 @@ function App() {
         setError(data.error || "Something went wrong");
       } else {
         setResult(data.data);
+
+        const newEntry = {
+          subject,
+          topic,
+          mode,
+          timestamp: new Date().toLocaleString()
+        };
+
+        const updatedHistory = [newEntry, ...history].slice(0, 8);
+
+        setHistory(updatedHistory);
+        localStorage.setItem("history", JSON.stringify(updatedHistory));
       }
     } catch {
-  setError("Backend is waking up… please retry in 30 seconds ⏳");
-} finally {
+      setError("Backend is waking up… please retry in 30 seconds ⏳");
+    } finally {
       setLoading(false);
     }
   };
@@ -118,6 +135,16 @@ function App() {
           <SkeletonCard />
         </div>
       )}
+
+      <HistoryPanel
+        history={history}
+        onSelect={(item) => {
+          setSubject(item.subject);
+          setTopic(item.topic);
+          setMode(item.mode);
+          setResult(null);
+        }}
+      />
 
       {result && <div className="section-divider"></div>}
 
