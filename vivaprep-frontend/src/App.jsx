@@ -1,27 +1,42 @@
+import { useState, useEffect } from "react";
+
 import TopicSelect from "./components/TopicSelect";
 import ModeSelect from "./components/ModeSelect";
 import ResultCard from "./components/ResultCard";
 import SkeletonCard from "./components/SkeletonCard";
 import SubjectSelect from "./components/SubjectSelect";
-import { SUBJECTS } from "./data/subjects";
-import { useState, useEffect } from "react";
 import HistoryPanel from "./components/HistoryPanel";
 
+import { SUBJECTS } from "./data/subjects";
+
 function App() {
+  /* -------------------- STATE -------------------- */
+
   const [subject, setSubject] = useState("DSA");
+
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("darkMode") === "true"
   );
+
   const [topic, setTopic] = useState("");
   const [mode, setMode] = useState("viva");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [history, setHistory] = useState(
+    JSON.parse(localStorage.getItem("history")) || []
+  );
+
+  /* -------------------- EFFECTS -------------------- */
+
+  // Reset topic & result when subject changes
   useEffect(() => {
     setTopic("");
     setResult(null);
   }, [subject]);
+
+  /* -------------------- HELPERS -------------------- */
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
@@ -34,9 +49,7 @@ function App() {
     localStorage.setItem("darkMode", newMode);
   };
 
-  const [history, setHistory] = useState(
-    JSON.parse(localStorage.getItem("history")) || []
-  );
+  /* -------------------- API CALL -------------------- */
 
   const generateAnswer = async () => {
     if (!topic) {
@@ -50,8 +63,8 @@ function App() {
 
     try {
       const BASE_URL = import.meta.env.VITE_API_URL;
-      const endpoint =
-        BASE_URL + SUBJECTS[subject].endpoint;
+      const endpoint = BASE_URL + SUBJECTS[subject].endpoint;
+
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -67,6 +80,7 @@ function App() {
       } else {
         setResult(data.data);
 
+        // Save to history
         const newEntry = {
           subject,
           topic,
@@ -75,7 +89,6 @@ function App() {
         };
 
         const updatedHistory = [newEntry, ...history].slice(0, 8);
-
         setHistory(updatedHistory);
         localStorage.setItem("history", JSON.stringify(updatedHistory));
       }
@@ -86,9 +99,11 @@ function App() {
     }
   };
 
+  /* -------------------- UI -------------------- */
+
   return (
     <div className={`app-container ${darkMode ? "dark" : ""}`}>
-      <h1>📘 VivaPrep AI (DSA)</h1>
+      <h1>📘 VivaPrep AI ({subject})</h1>
 
       {/* 🌙 Dark Mode Toggle */}
       <button
@@ -101,13 +116,15 @@ function App() {
         {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
       </button>
 
+      {/* Subject + Controls */}
       <SubjectSelect subject={subject} setSubject={setSubject} />
-      {/* Controls */}
+
       <TopicSelect
         topic={topic}
         setTopic={setTopic}
         topics={SUBJECTS[subject].topics}
       />
+
       <ModeSelect mode={mode} setMode={setMode} />
 
       <br /><br />
@@ -124,7 +141,7 @@ function App() {
         {loading ? "Generating..." : "Generate Answer"}
       </button>
 
-      {/* Error message */}
+      {/* Error */}
       {error && <p style={{ color: "red" }}>{error}</p>}
 
       {/* Loading Skeleton */}
@@ -136,6 +153,7 @@ function App() {
         </div>
       )}
 
+      {/* History Panel */}
       <HistoryPanel
         history={history}
         onSelect={(item) => {
@@ -146,9 +164,17 @@ function App() {
         }}
       />
 
+      {/* Empty State */}
+      {!loading && !result && !error && (
+        <p style={{ marginTop: "30px", opacity: 0.6 }}>
+          👆 Select a subject, topic & mode to generate answers
+        </p>
+      )}
+
+      {/* Divider */}
       {result && <div className="section-divider"></div>}
 
-      {/* Result Cards */}
+      {/* Results */}
       {!loading && result && (
         <div style={{ marginTop: "30px" }}>
           {result.viva_1_min && (
@@ -157,12 +183,6 @@ function App() {
               content={result.viva_1_min}
               onCopy={() => copyToClipboard(result.viva_1_min)}
             />
-          )}
-
-          {!loading && !result && !error && (
-            <p style={{ marginTop: "30px", opacity: 0.6 }}>
-              👆 Select a subject, topic & mode to generate answers
-            </p>
           )}
 
           {result.questions && (
@@ -201,12 +221,16 @@ function App() {
           )}
         </div>
       )}
-      <footer style={{
-        marginTop: "50px",
-        padding: "15px",
-        fontSize: "14px",
-        opacity: 0.7
-      }}>
+
+      {/* Footer */}
+      <footer
+        style={{
+          marginTop: "50px",
+          padding: "15px",
+          fontSize: "14px",
+          opacity: 0.7
+        }}
+      >
         Built with ❤️ by <strong>Lovepreet Singh</strong> • VivaPrep AI v1.0
       </footer>
     </div>
