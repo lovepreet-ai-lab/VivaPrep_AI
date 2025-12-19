@@ -22,7 +22,7 @@ export const SUBJECTS = {
 
   DE: {
     label: "Digital Electronics",
-    endpoint: "/api/v1/de/generate",
+    endpoint: "/api/v1/dsa/generate", // ✅ SAME ENDPOINT
     topics: [
       "Logic Gates",
       "Half Adder",
@@ -40,7 +40,7 @@ export const SUBJECTS = {
 
   OOPS: {
     label: "Object Oriented Programming",
-    endpoint: "/api/v1/oops/generate",
+    endpoint: "/api/v1/dsa/generate", // ✅ SAME ENDPOINT
     topics: [
       "OOPS Concepts",
       "Encapsulation",

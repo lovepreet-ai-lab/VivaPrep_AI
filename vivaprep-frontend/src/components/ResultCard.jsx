@@ -20,8 +20,14 @@ function ResultCard({
         <h3 style={{ margin: 0 }}>{title}</h3>
 
         <div style={{ display: "flex", gap: "8px" }}>
-          <button onClick={onCopy}>📋 Copy</button>
+          {/* Copy button (only if allowed) */}
+          {onCopy && (
+            <button onClick={onCopy}>
+              📋 Copy
+            </button>
+          )}
 
+          {/* Bookmark button (only if allowed) */}
           {onBookmark && (
             <button onClick={onBookmark}>
               {isBookmarked ? "⭐ Saved" : "☆ Save"}

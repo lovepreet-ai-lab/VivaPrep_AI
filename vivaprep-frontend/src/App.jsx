@@ -33,12 +33,34 @@ function App() {
     JSON.parse(localStorage.getItem("bookmarks")) || []
   );
 
+  const [timeLeft, setTimeLeft] = useState(60);
+
   /* -------------------- EFFECTS -------------------- */
 
+  // Reset when subject changes
   useEffect(() => {
     setTopic("");
     setResult(null);
   }, [subject]);
+
+  // Exam timer
+  useEffect(() => {
+    if (mode !== "exam" || !result) return;
+
+    setTimeLeft(60);
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [mode, result]);
 
   /* -------------------- HELPERS -------------------- */
 
@@ -63,32 +85,23 @@ function App() {
       (b) => b.title === title && b.content === content
     );
 
-    let updatedBookmarks;
+    const updated = exists
+      ? bookmarks.filter(
+          (b) => !(b.title === title && b.content === content)
+        )
+      : [
+          { title, content, timestamp: new Date().toLocaleString() },
+          ...bookmarks
+        ];
 
-    if (exists) {
-      updatedBookmarks = bookmarks.filter(
-        (b) => !(b.title === title && b.content === content)
-      );
-    } else {
-      updatedBookmarks = [
-        {
-          title,
-          content,
-          timestamp: new Date().toLocaleString()
-        },
-        ...bookmarks
-      ];
-    }
-
-    setBookmarks(updatedBookmarks);
-    localStorage.setItem("bookmarks", JSON.stringify(updatedBookmarks));
+    setBookmarks(updated);
+    localStorage.setItem("bookmarks", JSON.stringify(updated));
   };
 
   const removeBookmark = (title, content) => {
     const updated = bookmarks.filter(
       (b) => !(b.title === title && b.content === content)
     );
-
     setBookmarks(updated);
     localStorage.setItem("bookmarks", JSON.stringify(updated));
   };
@@ -106,20 +119,19 @@ function App() {
       return;
     }
 
+    const BASE_URL = import.meta.env.VITE_API_URL;
+
     setLoading(true);
     setError("");
     setResult(null);
 
     try {
-      const BASE_URL = import.meta.env.VITE_API_URL;
       const endpoint = BASE_URL + SUBJECTS[subject].endpoint;
 
       const response = await fetch(endpoint, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ topic, mode })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic, mode, subject })
       });
 
       const data = await response.json();
@@ -136,21 +148,26 @@ function App() {
           timestamp: new Date().toLocaleString()
         };
 
-        const filteredHistory = history.filter(
-          (item) =>
+        const filtered = history.filter(
+          (h) =>
             !(
-              item.subject === subject &&
-              item.topic === topic &&
-              item.mode === mode
+              h.subject === subject &&
+              h.topic === topic &&
+              h.mode === mode
             )
         );
 
-        const updatedHistory = [newEntry, ...filteredHistory].slice(0, 8);
+        const updatedHistory = [newEntry, ...filtered].slice(0, 8);
         setHistory(updatedHistory);
         localStorage.setItem("history", JSON.stringify(updatedHistory));
       }
-    } catch {
-      setError("Backend is waking up… please retry in 30 seconds ⏳");
+    } catch (err) {
+      console.error(err);
+      setError(
+        BASE_URL.includes("onrender")
+          ? "Backend is waking up… please retry in 30 seconds ⏳"
+          : "Local backend not reachable. Is Flask running?"
+      );
     } finally {
       setLoading(false);
     }
@@ -184,12 +201,23 @@ function App() {
 
       <ModeSelect mode={mode} setMode={setMode} />
 
-      <br /><br />
+      <label style={{ display: "block", marginTop: "10px" }}>
+        <input
+          type="checkbox"
+          checked={mode === "exam"}
+          onChange={(e) =>
+            setMode(e.target.checked ? "exam" : "viva")
+          }
+        />{" "}
+        🎯 Exam Simulation Mode
+      </label>
+
+      <br />
 
       <button
         className="generate-btn"
         onClick={generateAnswer}
-        disabled={loading}
+        disabled={loading || (mode === "exam" && timeLeft > 0)}
         style={{
           opacity: loading ? 0.7 : 1,
           cursor: loading ? "not-allowed" : "pointer"
@@ -221,98 +249,66 @@ function App() {
         }}
       />
 
-      {/* Empty State */}
+      {/* Empty */}
       {!loading && !result && !error && (
         <p style={{ marginTop: "30px", opacity: 0.6 }}>
           👆 Select a subject, topic & mode to generate answers
         </p>
       )}
 
-      {result && <div className="section-divider"></div>}
+      {/* Timer */}
+      {mode === "exam" && result && (
+        <div
+          style={{
+            marginTop: "15px",
+            padding: "10px",
+            background: "#7c2d12",
+            color: "white",
+            borderRadius: "6px"
+          }}
+        >
+          ⏱ Time Left: <strong>{timeLeft}s</strong>
+        </div>
+      )}
 
       {/* Results */}
       {!loading && result && (
         <div style={{ marginTop: "30px" }}>
-          {result.viva_1_min && (
-            <ResultCard
-              title="🗣 1-Minute Viva Answer"
-              content={result.viva_1_min}
-              onCopy={() => copyToClipboard(result.viva_1_min)}
-              onBookmark={() =>
-                toggleBookmark("🗣 1-Minute Viva Answer", result.viva_1_min)
-              }
-              isBookmarked={isBookmarked(
-                "🗣 1-Minute Viva Answer",
-                result.viva_1_min
-              )}
-            />
-          )}
+          {Object.entries(result).map(([key, value]) => {
+            const titles = {
+              viva_1_min: "🗣 1-Minute Viva Answer",
+              questions: "❓ Examiner Questions",
+              hinglish: "🧠 Hinglish Explanation",
+              deep: "🔍 If Examiner Goes Deeper",
+              exam_answer: "📝 Exam Answer"
+            };
 
-          {result.questions && (
-            <ResultCard
-              title="❓ Examiner Questions"
-              content={result.questions}
-              isList
-              onCopy={() =>
-                copyToClipboard(result.questions.join("\n"))
-              }
-              onBookmark={() =>
-                toggleBookmark(
-                  "❓ Examiner Questions",
-                  result.questions.join("\n")
-                )
-              }
-              isBookmarked={isBookmarked(
-                "❓ Examiner Questions",
-                result.questions.join("\n")
-              )}
-            />
-          )}
+            if (!titles[key]) return null;
 
-          {result.hinglish && (
-            <ResultCard
-              title="🧠 Hinglish Explanation"
-              content={result.hinglish}
-              onCopy={() => copyToClipboard(result.hinglish)}
-              onBookmark={() =>
-                toggleBookmark("🧠 Hinglish Explanation", result.hinglish)
-              }
-              isBookmarked={isBookmarked(
-                "🧠 Hinglish Explanation",
-                result.hinglish
-              )}
-            />
-          )}
+            const content =
+              Array.isArray(value) ? value.join("\n") : value;
 
-          {result.deep && (
-            <ResultCard
-              title="🔍 If Examiner Goes Deeper"
-              content={result.deep}
-              onCopy={() => copyToClipboard(result.deep)}
-              onBookmark={() =>
-                toggleBookmark("🔍 If Examiner Goes Deeper", result.deep)
-              }
-              isBookmarked={isBookmarked(
-                "🔍 If Examiner Goes Deeper",
-                result.deep
-              )}
-            />
-          )}
-
-          {result.exam_answer && (
-            <ResultCard
-              title="📝 Exam Answer"
-              content={result.exam_answer}
-              onCopy={() => copyToClipboard(result.exam_answer)}
-              onBookmark={() =>
-                toggleBookmark("📝 Exam Answer", result.exam_answer)
-              }
-              isBookmarked={isBookmarked(
-                "📝 Exam Answer",
-                result.exam_answer
-              )}
-            />
-          )}
+            return (
+              <ResultCard
+                key={key}
+                title={titles[key]}
+                content={value}
+                isList={Array.isArray(value)}
+                onCopy={
+                  mode === "exam"
+                    ? null
+                    : () => copyToClipboard(content)
+                }
+                onBookmark={
+                  mode === "exam"
+                    ? null
+                    : () =>
+                        toggleBookmark(titles[key], content)
+                }
+                isBookmarked={isBookmarked(titles[key], content)}
+              />
+            );
+          })}
         </div>
       )}
 
